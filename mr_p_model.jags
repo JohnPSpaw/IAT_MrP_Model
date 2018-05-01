@@ -1,0 +1,25 @@
+data {
+  for (i in 1:num_state) {
+    census_sum[i] <- sum(census_count[,i])
+  }
+}
+
+model {
+  for (i in 1:num_y) {
+    y[i] ~ dbern(p[i])
+    logit(p[i]) <- inprod(x[i,], beta[,state[i]])
+  }
+  for (i in 1:num_state) {
+    beta[1:num_x, i] ~ dmnorm(gamma %*% state_x[,i], tau)
+  }
+  for (i in 1:num_x) {
+    gamma[i,1:num_state_x] ~ dmnorm(gamma_mean, gamma_prec)
+  }
+  tau ~ dwish(tau_R, tau_k)
+  for (i in 1:num_state) {
+    for (j in 1:num_cells) {
+      logit(p_cell[j,i]) <- inprod(pred_x[j,], beta[,i])
+    }
+    predict[i] <- inprod(p_cell[,i], census_count[,i]) / census_sum[i]
+  }
+}
