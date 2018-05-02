@@ -166,7 +166,6 @@ data$num_state <- ncol(data$census_count) #number of states
 
 #Additional state level data - election data (dem vote share, south in civil war indicator), IAT
 library(pscl)
-
 pres2012 <- subset(presidentialElections, year==2012 & state != "DC", select=c("state","demVote","south"))
 pres2012$iat_prop <- state_IAT$IAT_proportion
   
