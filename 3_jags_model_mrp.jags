@@ -11,7 +11,7 @@ data {
 
 model {
   #individual level responses
-  #i indexes individuals from CCES survey
+  #i indexes individuals from  survey
   for (i in 1:num_y) {
     y[i] ~ dbern(p[i])
     logit(p[i]) <- inprod(x[i,], beta[,state[i]])
