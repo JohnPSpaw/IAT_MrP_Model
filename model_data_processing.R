@@ -133,19 +133,24 @@ levels(mrp.census$education) == levels(CCES.complete$education)
 ############################
 
 ### CREATE JAGS DATA ###
-mrp.formula <- issue_help_dreamer ~ f.race + education
+#individual level formula and model frame
+mrp.formula <- issue_help_dreamer ~ f.race + education                   
 mrp.frame <- model.frame(mrp.formula, strata=State, data=CCES.complete)
+
+#input data for jags model as list
 data <- list()
-data$y <- model.response(mrp.frame)
-data$x <- model.matrix(mrp.frame, mrp.frame)
-data$state <- model.extract(mrp.frame, "strata")
-data$num_x <- ncol(data$x)
-data$num_y <- length(data$y)
+data$y <- model.response(mrp.frame) #response
+data$x <- model.matrix(mrp.frame, mrp.frame) #design matrix
+data$state <- model.extract(mrp.frame, "strata") #states as strata
+data$num_x <- ncol(data$x) #predictor columns
+data$num_y <- length(data$y) #number of individual level responses
 
 predictors <- c("State", attr(terms(mrp.frame), "term.labels"))
 data.census <- aggregate(list(weights=mrp.census$weighted2008),
                          as.list(mrp.census[,predictors]),
                          sum)
+
+#data for post-stratification adjustments
 data.census <- reshape(data.census, 
                        varying=list(State=levels(data$state)), 
                        v.names="weights", 
@@ -154,9 +159,24 @@ data.census <- reshape(data.census,
                        idvar=setdiff(predictors,"State"), 
                        direction="wide")
 data$pred_x <- model.matrix(update(mrp.formula, NULL ~ .), data.census)
-data$census_count <- as.matrix(data.census[,levels(data$state)])
-data$num_cells <- nrow(data$census_count)
-data$num_state <- ncol(data$census_count)
+data$census_count <- as.matrix(data.census[,levels(data$state)])  #counts for each factor combination level by state
+data$num_cells <- nrow(data$census_count) #number of factor combination levels
+data$num_state <- ncol(data$census_count) #number of states
+
+
+#Additional state level data - election data (dem vote share, south in civil war indicator), IAT
+library(pscl)
+
+pres2012 <- subset(presidentialElections, year==2012 & state != "DC", select=c("state","demVote","south"))
+pres2012$iat_prop <- state_IAT$IAT_proportion
+  
+#[match(state.name, pres2012$state)] <- state.abb #rename states to match
+data$state_x <- t(as.matrix(cbind(Intercept=1,
+                    pres2012[match(levels(data$state),
+                                   pres2012$state),
+                             c("demVote", "south","iat_prop")])))
+data$num_state_x <- nrow(data$state_x)
+
 
 
 
