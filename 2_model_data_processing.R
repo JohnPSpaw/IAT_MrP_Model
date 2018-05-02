@@ -166,15 +166,30 @@ data$num_state <- ncol(data$census_count) #number of states
 
 #Additional state level data - election data (dem vote share, south in civil war indicator), IAT
 library(pscl)
+#Only include 2012 election results and exclude DC
 pres2012 <- subset(presidentialElections, year==2012 & state != "DC", select=c("state","demVote","south"))
+#add state level IAT data
 pres2012$iat_prop <- state_IAT$IAT_proportion
-  
-#[match(state.name, pres2012$state)] <- state.abb #rename states to match
+#add state level data to jags data list
 data$state_x <- t(as.matrix(cbind(Intercept=1,
-                    pres2012[match(levels(data$state),
-                                   pres2012$state),
-                             c("demVote", "south","iat_prop")])))
-data$num_state_x <- nrow(data$state_x)
+                                  pres2012[match(levels(data$state),pres2012$state), c("demVote", "south","iat_prop")]
+                                  )
+                            )
+                  )
+#number of state level predictors
+data$num_state_x <- nrow(data$state_x) 
+
+#Set model priors
+data$gamma_mean <- rep(0, nrow(data$state_x))
+data$gamma_prec <- diag(0.01, data$num_state_x, data$num_state_x)
+data$tau_k <- data$num_x + 1
+data$tau_R <- diag(1/data$tau_k, data$num_x, data$num_x)
+
+#export
+saveRDS(data, "Data/model_data.rds")
+
+#clean environment
+rm(list=ls())
 
 
 
