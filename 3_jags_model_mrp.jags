@@ -2,7 +2,6 @@
 ###Multi-level regression (binary) with post-stratification (state level)
 ###Model definition for fit in JAGS Gibbs sampler
 
-#what is this
 data {
   for (i in 1:num_state) {
     census_sum[i] <- sum(census_count[,i])
